@@ -1,0 +1,189 @@
+package com.contactapp.controller;
+
+import com.contactapp.model.Contact;
+import com.contactapp.repo.ContactRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+public class ContactControllerTest {
+
+    private ContactController contactController;
+
+    @Mock
+    private ContactRepository contactRepository;
+
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        contactController = new ContactController();
+        contactController.contactRepository = contactRepository;
+    }
+
+    @Test
+    public void testGetAllContacts() {
+        List<Contact> contacts = new ArrayList<>();
+        contacts.add(new Contact(1L, "John", "Doe", "john@example.com", "3456789909", "active"));
+        when(contactRepository.findAll()).thenReturn(contacts);
+
+        ResponseEntity<List<Contact>> responseEntity = contactController.getAllContacts();
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals(contacts, responseEntity.getBody());
+        
+        // Log details
+        System.out.println("Test: GetAllContacts");
+        System.out.println("Expected Status: " + HttpStatus.OK);
+        System.out.println("Actual Status: " + responseEntity.getStatusCode());
+        System.out.println("Contacts Retrieved: " + responseEntity.getBody());
+    }
+
+    @Test
+    public void testGetAllContactsNoContent() {
+        when(contactRepository.findAll()).thenReturn(new ArrayList<>());
+
+        ResponseEntity<List<Contact>> responseEntity = contactController.getAllContacts();
+
+        assertEquals(HttpStatus.NO_CONTENT, responseEntity.getStatusCode());
+        assertNull(responseEntity.getBody());
+     
+        // Log details
+        System.out.println("Test: GetAllContactsNoContent");
+        System.out.println("Expected Status: " + HttpStatus.NO_CONTENT);
+        System.out.println("Actual Status: " + responseEntity.getStatusCode());
+        System.out.println("No Contacts Retrieved.");
+    }
+
+    @Test
+    public void testGetContactById() {
+        Long contactId = 1L;
+        Contact contact = new Contact(contactId, "John", "Doe", "john@example.com", "3456789909", "active");
+        when(contactRepository.findById(contactId)).thenReturn(Optional.of(contact));
+
+        ResponseEntity<Contact> responseEntity = contactController.getContactById(contactId);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals(contact, responseEntity.getBody());
+        
+        // Log details
+        System.out.println("Test: GetContactById");
+        System.out.println("Expected Status: " + HttpStatus.OK);
+        System.out.println("Actual Status: " + responseEntity.getStatusCode());
+        System.out.println("Contact Retrieved: " + responseEntity.getBody());
+    }
+
+    @Test
+    public void testGetContactByIdNotFound() {
+        Long contactId = 1L;
+        when(contactRepository.findById(contactId)).thenReturn(Optional.empty());
+
+        ResponseEntity<Contact> responseEntity = contactController.getContactById(contactId);
+
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+        assertNull(responseEntity.getBody());
+        
+        // Log details
+        System.out.println("Test: GetContactByIdNotFound");
+        System.out.println("Expected Status: " + HttpStatus.NOT_FOUND);
+        System.out.println("Actual Status: " + responseEntity.getStatusCode());
+        System.out.println("Contact Not Found.");
+    }
+
+    @Test
+    public void testAddContact() {
+        Contact newContact = new Contact(null, "Jane", "Smith", "jane@example.com", "3456789909", "active");
+        Contact savedContact = new Contact(1L, "Jane", "Smith", "jane@example.com", "3456789909", "active");
+        when(contactRepository.save(newContact)).thenReturn(savedContact);
+
+        ResponseEntity<Contact> responseEntity = contactController.addContact(newContact);
+
+        assertEquals(HttpStatus.CREATED, responseEntity.getStatusCode());
+        assertEquals(savedContact, responseEntity.getBody());
+        
+        // Log details
+        System.out.println("Test: AddContact");
+        System.out.println("Expected Status: " + HttpStatus.CREATED);
+        System.out.println("Actual Status: " + responseEntity.getStatusCode());
+        System.out.println("Contact Created: " + responseEntity.getBody());
+    }
+
+    @Test
+    public void testUpdateContact() {
+        Long contactId = 1L;
+        Contact existingContact = new Contact(contactId, "John", "Doe", "john@example.com", "3456789909", "active");
+        Contact updatedContactData = new Contact(contactId, "updatedJane", "Smith", "jane@example.com", "3456789909", "active");
+
+        when(contactRepository.findById(contactId)).thenReturn(Optional.of(existingContact));
+        when(contactRepository.save(existingContact)).thenReturn(updatedContactData);
+
+        ResponseEntity<Contact> responseEntity = contactController.updateContact(contactId, updatedContactData);
+
+        assertEquals(HttpStatus.CREATED, responseEntity.getStatusCode());
+        assertEquals(updatedContactData, responseEntity.getBody());
+        
+        // Log details
+        System.out.println("Test: UpdateContact");
+        System.out.println("Expected Status: " + HttpStatus.CREATED);
+        System.out.println("Actual Status: " + responseEntity.getStatusCode());
+        System.out.println("Contact Updated: " + responseEntity.getBody());
+    }
+
+    @Test
+    public void testUpdateContactNotFound() {
+        Long contactId = 1L;
+        Contact updatedContactData = new Contact(contactId, "Jane", "Smith", "jane@example.com", "3456789909", "active");
+
+        when(contactRepository.findById(contactId)).thenReturn(Optional.empty());
+
+        ResponseEntity<Contact> responseEntity = contactController.updateContact(contactId, updatedContactData);
+
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+        assertNull(responseEntity.getBody());
+        
+        // Log details
+        System.out.println("Test: UpdateContactNotFound");
+        System.out.println("Expected Status: " + HttpStatus.NOT_FOUND);
+        System.out.println("Actual Status: " + responseEntity.getStatusCode());
+        System.out.println("Contact Not Found for Update.");
+    }
+
+    @Test
+    public void testDeleteContact() {
+        Long contactId = 1L;
+
+        ResponseEntity<HttpStatus> responseEntity = contactController.deleteContact(contactId);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        verify(contactRepository, times(1)).deleteById(contactId);
+        
+        // Log details
+        System.out.println("Test: DeleteContact");
+        System.out.println("Expected Status: " + HttpStatus.OK);
+        System.out.println("Actual Status: " + responseEntity.getStatusCode());
+        System.out.println("Contact Deleted: ID=" + contactId);
+    }
+
+    @Test
+    public void testDeleteAllContacts() {
+        ResponseEntity<HttpStatus> responseEntity = contactController.deleteAllContacts();
+
+        assertEquals(HttpStatus.NO_CONTENT, responseEntity.getStatusCode());
+        verify(contactRepository, times(1)).deleteAll();
+        
+        // Log details
+        System.out.println("Test: DeleteAllContacts");
+        System.out.println("Expected Status: " + HttpStatus.NO_CONTENT);
+        System.out.println("Actual Status: " + responseEntity.getStatusCode());
+        System.out.println("All Contacts Deleted.");
+    }
+}
