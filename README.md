@@ -48,6 +48,8 @@ The project exposes the following **RESTful API endpoints**:
 
 Screenshots of **Postman** outcomes and **H2 database tables** are available in the `screenshots` directory of this repository.
 
+### JUnit Test Cases Results --
+![image](https://github.com/CodingBazaar/contact-app/assets/37098603/c5005c8b-3b16-4ef3-8f81-0ef4bfb79107)
 
 
 ### Spring Security Login Page
