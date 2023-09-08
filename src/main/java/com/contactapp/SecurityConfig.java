@@ -3,96 +3,102 @@ package com.contactapp;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+
+import com.contactapp.services.CustomUserDetailsService;
 
 @Configuration
 @Profile("!secured")
+@EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = false, securedEnabled = true)
 public class SecurityConfig {
-	
-	// I will be keeping these commented codes as they shows number of ways of spring security configurations
-	
-	@Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests()
-                .anyRequest().permitAll()
-                .and().csrf().disable();
-        return http.build();
-    }
 
-	
-//	@Bean
-//	public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
-//	    http.authorizeRequests()
-//	            .anyRequest().authenticated()
-//	            .and()
-//	            .oauth2ResourceServer().jwt().jwtAuthenticationConverter(jwtAuthenticationConverter);
-//	    return http.build();
-//	}
-//	@Order(1)	
-//    @Bean	
-//    public SecurityFilterChain clientFilterChain(HttpSecurity http) throws Exception {	
-//        http.authorizeRequests()	
-//            .requestMatchers("/")	
-//            .permitAll()	
-//            .anyRequest()	
-//            .authenticated();	
-////        http.oauth2Login()	
-////            .and()	
-////            .logout()	
-////            .addLogoutHandler(keycloakLogoutHandler)	
-////            .logoutSuccessUrl("/");	
-//        return http.build();	
-//    }
-}
-//
-//public class SecurityConfig {
+	@Bean
+	public UserDetailsService userDetailsService() {
+		// Define your user details service here
+		return new CustomUserDetailsService();
+	}
+
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
+
+	@Bean
+	public AuthenticationProvider authenticationProvider() {
+		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+		authProvider.setUserDetailsService(userDetailsService());
+		authProvider.setPasswordEncoder(passwordEncoder());
+		return authProvider;
+	}
+
+//	 @Override
+	 protected void configure(AuthenticationManagerBuilder auth) {
+	        auth.authenticationProvider(authenticationProvider());
+	   }
+//	 
+//	 @Override
+	protected void configure(HttpSecurity http) throws Exception {
+
+		http.authorizeHttpRequests(authz -> {
+			try {
+				authz.requestMatchers("/login").permitAll().anyRequest().authenticated().and().csrf(csrf -> csrf.disable()).formLogin(
+						login -> login.loginPage("/login").defaultSuccessUrl("/api/contact/getAllContacts").permitAll())
+						.logout(logout -> logout.permitAll());
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+	}
+
+	// Below bean disables all security measures and all entry to all API's without AUTH
 //	@Bean
 //	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-////		http.authorizeHttpRequests((authz) -> authz.anyRequest().permitAll());
-////		return http.build();
-//		http.csrf().disable()
-//		.authorizeHttpRequests()
-//		.requestMatchers("/api/contact")
-//		.permitAll()
-//		.anyRequest()
-//		.authenticated()
-//		.and()
-//		.formLogin();
-//		
+//
+//		http.authorizeHttpRequests(authz -> {
+//			try {
+//				authz.anyRequest().permitAll().and().csrf(csrf -> csrf.disable());
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//		});
 //		return http.build();
 //	}
-//
-//}
 
-//package com.example.demo.config;
+}
 
-//import org.springframework.context.annotation.Bean;
-//import org.springframework.context.annotation.Configuration;
-//import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-//import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-//import org.springframework.security.crypto.password.NoOpPasswordEncoder;
-//import org.springframework.security.web.SecurityFilterChain;
-//
-//@Configuration
-//@EnableWebSecurity
-//public class SecurityConfig {
-//
-//    @Bean
-//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//        http
-//                .authorizeHttpRequests()
-//                .anyRequest().authenticated();
-//        http
-//                .formLogin();
-//
-//        return http.build();
-//    }
-//
-//    @SuppressWarnings("deprecation")
-//    @Bean
-//    public NoOpPasswordEncoder passwordEncoder() {
-//        return (NoOpPasswordEncoder) NoOpPasswordEncoder.getInstance();
-//    }
-//
-//}
+//http
+//.authorizeRequests()
+//    .antMatchers("/login").permitAll() // Allow anyone to access the login page
+//    .anyRequest().authenticated()
+//    .and()
+//.formLogin()
+//    .loginPage("/login")
+//    .defaultSuccessURL("/contacts") // Redirect to your contacts page upon successful login
+//    .permitAll()
+//    .and()
+//.logout()
+//    .permitAll();
+
+// --------------- older syntax of formlogin and formlogout
+//authz
+//.requestMatchers("/login").permitAll()
+//.anyRequest().authenticated()
+//.and()
+//.formLogin()
+//.loginPage("/login")
+//.defaultSuccessUrl("/api/contact/getAllContacts")
+//.permitAll()
+//.and()
+//.logout()
+//.permitAll();
